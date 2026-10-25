@@ -1,5 +1,6 @@
 """Item pipelines: cleaning, validation and de-duplication."""
-
+import sqlite3
+from pathlib import Path
 import logging
 import re
 import unicodedata
@@ -108,3 +109,77 @@ class DuplicatesPipeline:
             raise DropItem(f"Duplicate item: {url}")
         self._seen.add(url)
         return item
+
+class SQLitePipeline:
+    """Persist validated items into a SQLite database. """
+
+    CREATE_TABLE_SQL = """
+        CREATE TABLE IF NOT EXISTS books (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            title        TEXT    NOT NULL,
+            price        REAL    NOT NULL,
+            availability INTEGER NOT NULL CHECK (availability IN (0, 1)),
+            product_url  TEXT    NOT NULL UNIQUE,
+            image_url    TEXT    NOT NULL,
+            category     TEXT    NOT NULL
+        )
+    """
+    INSERT_SQL = """
+        INSERT INTO books (title, price, availability, product_url, image_url, category)
+        VALUES (:title, :price, :availability, :product_url, :image_url, :category)
+    """
+    COMMIT_EVERY = 50
+
+    def __init__(self, db_path: str, reset_on_start: bool = True) -> None:
+        """Store configuration; the connection is opened in ``open_spider``. """
+        self.db_path = db_path
+        self.reset_on_start = reset_on_start
+        self.connection: Optional[sqlite3.Connection] = None
+        self._inserted = 0
+        self._pending = 0
+
+    @classmethod
+    def from_crawler(cls, crawler) -> "SQLitePipeline":
+        """Build the pipeline from project settings."""
+        settings = crawler.settings
+        return cls(
+            db_path=settings.get("SQLITE_DB_PATH", "output/books.db"),
+            reset_on_start=settings.getbool("SQLITE_RESET_ON_START", True),
+        )
+
+    def open_spider(self, spider: Spider) -> None:
+        """Open the database connection and prepare the table."""
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        self.connection = sqlite3.connect(self.db_path)
+        if self.reset_on_start:
+            self.connection.execute("DROP TABLE IF EXISTS books")
+        self.connection.execute(self.CREATE_TABLE_SQL)
+        self.connection.commit()
+        logger.info("SQLite database ready at %s", self.db_path)
+
+    def process_item(self, item: Any, spider: Spider) -> Any:
+        """Insert one item into the ``books`` table."""
+        row = dict(ItemAdapter(item))
+        row["availability"] = int(bool(row["availability"]))
+        try:
+            self.connection.execute(self.INSERT_SQL, row)
+        except sqlite3.IntegrityError as exc:
+            raise DropItem(f"Integrity error for {row['product_url']}: {exc}")
+        except sqlite3.Error as exc:
+            logger.error("Database error for %s: %s", row["product_url"], exc)
+            raise DropItem(f"Database error for {row['product_url']}: {exc}")
+
+        self._inserted += 1
+        self._pending += 1
+        if self._pending >= self.COMMIT_EVERY:
+            self.connection.commit()
+            self._pending = 0
+        return item
+
+    def close_spider(self, spider: Spider) -> None:
+        """Commit remaining rows and close the connection. """
+        if self.connection is None:
+            return
+        self.connection.commit()
+        self.connection.close()
+        logger.info("SQLite: %d rows stored in %s", self._inserted, self.db_path)

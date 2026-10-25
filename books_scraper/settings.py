@@ -37,7 +37,12 @@ ITEM_PIPELINES = {
     "books_scraper.pipelines.AvailabilityPipeline": 300,
     "books_scraper.pipelines.ValidationPipeline": 400,
     "books_scraper.pipelines.DuplicatesPipeline": 500,
+    "books_scraper.pipelines.SQLitePipeline": 600,
 }
+
+# --- Database -----------------------------------------------------------
+SQLITE_DB_PATH = "output/books.db"
+SQLITE_RESET_ON_START = True
 
 # --- Feed exports -----------------------------------------------------
 FEED_FIELDS = ["title", "price", "availability", "product_url", "image_url", "category"]
