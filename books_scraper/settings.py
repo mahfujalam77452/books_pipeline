@@ -29,3 +29,40 @@ RANDOM_SEED = None           # set an int for a reproducible crawl
 
 # Use the modern, future-proof default
 FEED_EXPORT_ENCODING = "utf-8"
+
+# --- Item pipelines (lower number runs first) -------------------------
+ITEM_PIPELINES = {
+    "books_scraper.pipelines.TextNormalizationPipeline": 100,
+    "books_scraper.pipelines.PricePipeline": 200,
+    "books_scraper.pipelines.AvailabilityPipeline": 300,
+    "books_scraper.pipelines.ValidationPipeline": 400,
+    "books_scraper.pipelines.DuplicatesPipeline": 500,
+}
+
+# --- Feed exports -----------------------------------------------------
+FEED_FIELDS = ["title", "price", "availability", "product_url", "image_url", "category"]
+
+FEEDS = {
+    "output/books.json": {
+        "format": "json",
+        "encoding": "utf-8",
+        "indent": 4,
+        "fields": FEED_FIELDS,
+        "overwrite": True,
+    },
+    "output/books.csv": {
+        "format": "csv",
+        "encoding": "utf-8",
+        "fields": FEED_FIELDS,
+        "overwrite": True,
+    },
+    "output/books.xml": {
+        "format": "xml",
+        "encoding": "utf-8",
+        "indent": 4,
+        "item_element": "book",
+        "root_element": "books",
+        "fields": FEED_FIELDS,
+        "overwrite": True,
+    },
+}
