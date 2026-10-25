@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+output/
+build/
+dist/
+*.egg-info/
+.git/
+.gitignore
+test.json

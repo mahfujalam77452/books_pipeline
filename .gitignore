@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Scrapy / Scrapyd
+.scrapy/
+httpcache/
+twistd.pid
+eggs/
+dbs/
+logs/
+
+# Generated output (feeds + SQLite database)
+output/
+output_docker/
+test.json
+
+# Environment and secrets
+.env
+*.env
+
+# IDE / OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
