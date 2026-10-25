@@ -1,0 +1,17 @@
+services:
+  scrapyd:
+    build: .
+    image: books-scrapyd
+    container_name: books-scrapyd
+    ports:
+      - "6800:6800"
+    environment:
+      BOOKS_OUTPUT_DIR: /app/output
+    volumes:
+      - books_output:/app/output
+      - scrapyd_data:/var/lib/scrapyd
+    restart: unless-stopped
+
+volumes:
+  books_output:
+  scrapyd_data:

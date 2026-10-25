@@ -1,3 +1,6 @@
+import os
+
+
 """Scrapy settings for the books_scraper project."""
 
 BOT_NAME = "books_scraper"
@@ -40,28 +43,27 @@ ITEM_PIPELINES = {
     "books_scraper.pipelines.SQLitePipeline": 600,
 }
 
-# --- Database -----------------------------------------------------------
-SQLITE_DB_PATH = "output/books.db"
-SQLITE_RESET_ON_START = True
 
 # --- Feed exports -----------------------------------------------------
 FEED_FIELDS = ["title", "price", "availability", "product_url", "image_url", "category"]
-
+# Directory for all generated files (feeds + database).
+# Overridden with an absolute path inside Docker.
+OUTPUT_DIR = os.environ.get("BOOKS_OUTPUT_DIR", "output")
 FEEDS = {
-    "output/books.json": {
+    f"{OUTPUT_DIR}/books.json": {
         "format": "json",
         "encoding": "utf-8",
         "indent": 4,
         "fields": FEED_FIELDS,
         "overwrite": True,
     },
-    "output/books.csv": {
+    f"{OUTPUT_DIR}/books.csv": {
         "format": "csv",
         "encoding": "utf-8",
         "fields": FEED_FIELDS,
         "overwrite": True,
     },
-    "output/books.xml": {
+    f"{OUTPUT_DIR}/books.xml": {
         "format": "xml",
         "encoding": "utf-8",
         "indent": 4,
@@ -71,3 +73,8 @@ FEEDS = {
         "overwrite": True,
     },
 }
+
+
+# --- Database -----------------------------------------------------------
+SQLITE_DB_PATH = f"{OUTPUT_DIR}/books.db"
+SQLITE_RESET_ON_START = True
